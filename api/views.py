@@ -142,3 +142,54 @@ class ResignationWithdrawView(generics.UpdateAPIView):
         instance.save()
         return Response(ResignationSerializer(instance).data)
 
+
+from django.db import connection
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def health_check(request):
+    """
+    Public health check endpoint.
+    Verifies database connection, lists APIs, and outputs environment/diagnostic details.
+    """
+    db_ok = True
+    db_error = None
+    try:
+        connection.ensure_connection()
+    except Exception as e:
+        db_ok = False
+        db_error = str(e)
+
+    from django.conf import settings
+    db_config = settings.DATABASES.get('default', {})
+    db_host = db_config.get('HOST', '')
+    db_name = db_config.get('NAME', '')
+    
+    api_endpoints = [
+        {"path": "/api/health/", "method": "GET", "description": "Health check endpoint"},
+        {"path": "/api/login/", "method": "POST", "description": "Validate credentials & get JWT token"},
+        {"path": "/api/users/", "method": "GET/POST", "description": "List or create users"},
+        {"path": "/api/users/<pk>/", "method": "GET/PUT/PATCH/DELETE", "description": "Manage user details"},
+        {"path": "/api/resignations/", "method": "GET/POST", "description": "List or submit resignations"},
+        {"path": "/api/resignations/<pk>/", "method": "PATCH", "description": "Update resignation status"},
+        {"path": "/api/resignations/<pk>/withdraw/", "method": "PATCH", "description": "Withdraw resignation"},
+        {"path": "/api/settings/", "method": "GET/PUT", "description": "Read or update system settings"},
+        {"path": "/api/audit-logs/", "method": "GET/POST", "description": "List or create audit logs"},
+    ]
+
+    return Response({
+        "status": "healthy" if db_ok else "unhealthy",
+        "database": {
+            "connected": db_ok,
+            "host": db_host,
+            "name": db_name,
+            "error": db_error
+        },
+        "endpoints": api_endpoints,
+        "environment": {
+            "debug": settings.DEBUG,
+            "timezone": settings.TIME_ZONE,
+        }
+    }, status=status.HTTP_200_OK if db_ok else status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
