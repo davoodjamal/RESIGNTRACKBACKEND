@@ -29,7 +29,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-*2#rzts&czavh7b$q2ixt
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['resigntrackbackend.onrender.com', 'localhost', '127.0.0.1']
+
 
 
 # Application definition
