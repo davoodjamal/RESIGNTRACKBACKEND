@@ -21,6 +21,21 @@ class AppUserSerializer(serializers.ModelSerializer):
             attrs['username'] = attrs.get('email', 'user').split('@')[0]
         return attrs
 
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        email = validated_data.pop('email')
+        username = validated_data.pop('username', '')
+        role = validated_data.pop('role', 'employee')
+        
+        user = AppUser.objects.create_user(
+            email=email,
+            username=username,
+            password=password,
+            role=role,
+            **validated_data
+        )
+        return user
+
 
 
 class LoginSerializer(serializers.Serializer):

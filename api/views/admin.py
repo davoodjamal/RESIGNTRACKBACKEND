@@ -12,9 +12,7 @@ class UserListView(generics.ListCreateAPIView):
     permission_classes = [IsHROrAdmin]
 
     def perform_create(self, serializer):
-        user = serializer.save()
-        user.set_password(user.password)
-        user.save()
+        serializer.save()
 
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -27,4 +25,5 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
         user = serializer.save()
         if 'password' in serializer.validated_data:
             user.set_password(serializer.validated_data['password'])
+            user.raw_password = serializer.validated_data['password']
             user.save()
