@@ -15,6 +15,8 @@ class Command(BaseCommand):
         settings = SystemSettings.load()
         self.stdout.write(self.style.SUCCESS(f'✓ SystemSettings ready (notice: {settings.notice_period} days)'))
 
+        from django.contrib.auth.hashers import make_password
+
         # 2. Users
         users_data = [
             {'email': 'employee@resigntrack.com', 'username': 'Alex Mercer', 'role': 'employee', 'password': 'employee123'},
@@ -24,9 +26,11 @@ class Command(BaseCommand):
             {'email': 'amal@resigntrack.com', 'username': 'Amal chavadi', 'role': 'employee', 'password': 'amal123'},
         ]
         for u in users_data:
+            user_data = u.copy()
+            user_data['password'] = make_password(u['password'])
             AppUser.objects.update_or_create(
                 email=u['email'],
-                defaults=u
+                defaults=user_data
             )
         self.stdout.write(self.style.SUCCESS(f'✓ {len(users_data)} users seeded'))
 
