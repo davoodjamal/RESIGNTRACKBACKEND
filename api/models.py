@@ -140,10 +140,31 @@ class SystemSettings(models.Model):
 class AuditLog(models.Model):
     """Timestamped audit trail entry."""
     time = models.DateTimeField(auto_now_add=True)
+    user_id = models.IntegerField(null=True, blank=True)
+    action = models.CharField(max_length=100, blank=True, default='SYSTEM_EVENT')
+    target = models.CharField(max_length=300, blank=True, default='')
+    ip_address = models.CharField(max_length=45, blank=True, default='127.0.0.1')
     message = models.TextField()
 
     class Meta:
         ordering = ['-time']
+
+    def save(self, *args, **kwargs):
+        if (self.action == 'SYSTEM_EVENT' or not self.action) and self.message:
+            msg = self.message.lower()
+            if 'session opened' in msg or 'logged in' in msg or 'access granted' in msg:
+                self.action = 'Access Granted'
+            elif 'session closed' in msg or 'signed out' in msg:
+                self.action = 'User Removed'
+            elif 'export' in msg:
+                self.action = 'System Export'
+            elif 'removed' in msg or 'delete' in msg:
+                self.action = 'User Removed'
+            elif 'setting' in msg or 'config' in msg or 'policy' in msg:
+                self.action = 'Policy Modified'
+            elif 'approved' in msg or 'rejected' in msg or 'review' in msg:
+                self.action = 'Review Finalized'
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"[{self.time}] {self.message[:60]}"

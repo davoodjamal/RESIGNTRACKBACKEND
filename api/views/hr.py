@@ -48,3 +48,9 @@ class AuditLogListCreateView(generics.ListCreateAPIView):
     queryset = AuditLog.objects.all()
     serializer_class = AuditLogSerializer
     permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        if self.request.user and self.request.user.is_authenticated:
+            serializer.save(user_id=self.request.user.id)
+        else:
+            serializer.save()
