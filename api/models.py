@@ -84,6 +84,7 @@ class AppUser(AbstractBaseUser):
 class Resignation(models.Model):
     """Employee resignation request."""
     STATUS_CHOICES = [
+        ('Draft', 'Draft'),
         ('Pending', 'Pending'),
         ('Approved', 'Approved'),
         ('Rejected', 'Rejected'),
@@ -92,9 +93,9 @@ class Resignation(models.Model):
     email = models.EmailField()
     name = models.CharField(max_length=200)
     department = models.CharField(max_length=200, default='')
-    reason = models.CharField(max_length=300)
+    reason = models.CharField(max_length=300, null=True, blank=True)
     submission_date = models.DateField(auto_now_add=True)
-    relieving_date = models.DateField()
+    relieving_date = models.DateField(null=True, blank=True)
     comments = models.TextField(blank=True, default='')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
     exit_feedback = models.JSONField(default=dict, blank=True)
