@@ -81,7 +81,8 @@ class AdminAnalyticsSyncView(APIView):
                 exit_reasons.append({
                     'label': reason,
                     'pct': pct,
-                    'color': colors.get(reason, '#3b494b')
+                    'count': count,
+                    'color': colors.get(reason, '#8b5cf6')
                 })
             
             if sum(r['pct'] for r in exit_reasons) == 0:
@@ -89,11 +90,11 @@ class AdminAnalyticsSyncView(APIView):
 
         if total_resignations == 0:
             exit_reasons = [
-                { 'label': 'Career Growth', 'pct': 35, 'color': '#00dbe9' },
-                { 'label': 'Compensation', 'pct': 25, 'color': '#00dbe9' },
-                { 'label': 'Work-Life Balance', 'pct': 20, 'color': '#00dbe9' },
-                { 'label': 'Management', 'pct': 10, 'color': '#505f76' },
-                { 'label': 'Other', 'pct': 10, 'color': '#3b494b' }
+                { 'label': 'Career Growth', 'pct': 35, 'count': 35, 'color': '#00dbe9' },
+                { 'label': 'Compensation', 'pct': 25, 'count': 25, 'color': '#f43f5e' },
+                { 'label': 'Work-Life Balance', 'pct': 20, 'count': 20, 'color': '#10b981' },
+                { 'label': 'Management', 'pct': 10, 'count': 10, 'color': '#eab308' },
+                { 'label': 'Other', 'pct': 10, 'count': 10, 'color': '#8b5cf6' }
             ]
 
         # 3. Usage metrics
