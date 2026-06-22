@@ -13,7 +13,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # 1. System Settings
         settings = SystemSettings.load()
-        self.stdout.write(self.style.SUCCESS(f'✓ SystemSettings ready (notice: {settings.notice_period} days)'))
+        self.stdout.write(self.style.SUCCESS(f'OK: SystemSettings ready (notice: {settings.notice_period} days)'))
 
         from django.contrib.auth.hashers import make_password
 
@@ -32,7 +32,7 @@ class Command(BaseCommand):
                 email=u['email'],
                 defaults=user_data
             )
-        self.stdout.write(self.style.SUCCESS(f'✓ {len(users_data)} users seeded'))
+        self.stdout.write(self.style.SUCCESS(f'OK: {len(users_data)} users seeded'))
 
         # 3. Sample Resignations
         resignations_data = [
@@ -70,14 +70,14 @@ class Command(BaseCommand):
                 email=r['email'],
                 defaults=r
             )
-        self.stdout.write(self.style.SUCCESS(f'✓ {len(resignations_data)} resignations seeded'))
+        self.stdout.write(self.style.SUCCESS(f'OK: {len(resignations_data)} resignations seeded'))
 
         # 4. Initial Audit Logs
         if AuditLog.objects.count() == 0:
             AuditLog.objects.create(message='System initiated. Credential profiles loaded.')
             AuditLog.objects.create(message='Standard exit notice period defaults set to 30 days.')
-            self.stdout.write(self.style.SUCCESS('✓ 2 audit logs seeded'))
+            self.stdout.write(self.style.SUCCESS('OK: 2 audit logs seeded'))
         else:
-            self.stdout.write(self.style.SUCCESS('✓ Audit logs already exist, skipping'))
+            self.stdout.write(self.style.SUCCESS('OK: Audit logs already exist, skipping'))
 
-        self.stdout.write(self.style.SUCCESS('\n✅ Database seeding complete!'))
+        self.stdout.write(self.style.SUCCESS('\nDatabase seeding complete!'))
