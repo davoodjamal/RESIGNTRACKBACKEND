@@ -173,7 +173,6 @@ class AuditLog(models.Model):
         return f"[{self.time}] {self.message[:60]}"
 
 
-<<<<<<< HEAD
 class Asset(models.Model):
     tag = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=200)
@@ -183,7 +182,6 @@ class Asset(models.Model):
     due_back = models.DateField(null=True, blank=True)
     warranty_expiry = models.DateField(null=True, blank=True)
     maintenance_notes = models.TextField(blank=True, default='')
-=======
 class ExitChecklistTask(models.Model):
     STATUS_CHOICES = [
         ('Completed', 'Completed'),
@@ -211,14 +209,12 @@ class Asset(models.Model):
     due_back = models.DateField(null=True, blank=True)
     warranty_expiry = models.DateField(null=True, blank=True)
     notes = models.TextField(blank=True, default='')
->>>>>>> e1c9fee45c83174020b760f3b6902778e55adfac
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.tag} - {self.name}"
 
 
-<<<<<<< HEAD
 class Meeting(models.Model):
     employee = models.ForeignKey('AppUser', on_delete=models.CASCADE, related_name='meetings')
     date = models.DateField()
@@ -228,7 +224,6 @@ class Meeting(models.Model):
 
     def __str__(self):
         return f"Meeting with {self.employee.username} on {self.date}"
-=======
 class AssetAuditLog(models.Model):
     asset_id = models.IntegerField(null=True, blank=True)
     asset_tag = models.CharField(max_length=100)
@@ -275,5 +270,4 @@ class Notification(models.Model):
         return f"Notification for {self.user.email}: {self.title}"
 
 
->>>>>>> e1c9fee45c83174020b760f3b6902778e55adfac
 
