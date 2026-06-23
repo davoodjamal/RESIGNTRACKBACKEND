@@ -99,6 +99,8 @@ class Resignation(models.Model):
     comments = models.TextField(blank=True, default='')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
     exit_feedback = models.JSONField(default=dict, blank=True)
+    meeting_schedule = models.CharField(max_length=200, default='Today, 2:00 PM')
+    meeting_status = models.CharField(max_length=100, default='Scheduled')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -171,6 +173,7 @@ class AuditLog(models.Model):
         return f"[{self.time}] {self.message[:60]}"
 
 
+<<<<<<< HEAD
 class Asset(models.Model):
     tag = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=200)
@@ -180,12 +183,42 @@ class Asset(models.Model):
     due_back = models.DateField(null=True, blank=True)
     warranty_expiry = models.DateField(null=True, blank=True)
     maintenance_notes = models.TextField(blank=True, default='')
+=======
+class ExitChecklistTask(models.Model):
+    STATUS_CHOICES = [
+        ('Completed', 'Completed'),
+        ('Pending', 'Pending'),
+        ('Scheduled', 'Scheduled'),
+    ]
+    resignation = models.ForeignKey(Resignation, on_delete=models.CASCADE, related_name='checklist_tasks')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    department = models.CharField(max_length=100, blank=True, default='')
+    due_date = models.DateField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.resignation.email} - {self.title} ({self.status})"
+
+
+class Asset(models.Model):
+    tag = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=200)
+    type = models.CharField(max_length=50, default='Laptop')
+    status = models.CharField(max_length=50, default='Available')
+    assigned_to = models.CharField(max_length=200, blank=True, default='')
+    due_back = models.DateField(null=True, blank=True)
+    warranty_expiry = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True, default='')
+>>>>>>> e1c9fee45c83174020b760f3b6902778e55adfac
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.tag} - {self.name}"
 
 
+<<<<<<< HEAD
 class Meeting(models.Model):
     employee = models.ForeignKey('AppUser', on_delete=models.CASCADE, related_name='meetings')
     date = models.DateField()
@@ -195,4 +228,52 @@ class Meeting(models.Model):
 
     def __str__(self):
         return f"Meeting with {self.employee.username} on {self.date}"
+=======
+class AssetAuditLog(models.Model):
+    asset_id = models.IntegerField(null=True, blank=True)
+    asset_tag = models.CharField(max_length=100)
+    action = models.CharField(max_length=100)
+    performed_by = models.CharField(max_length=200)
+    date = models.DateField(auto_now_add=True)
+    notes = models.TextField(blank=True, default='')
+
+    def __str__(self):
+        return f"[{self.date}] {self.action} on {self.asset_tag}"
+
+
+class RescheduleRequest(models.Model):
+    STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('Approved', 'Approved'),
+        ('Rejected', 'Rejected'),
+    ]
+    resignation = models.ForeignKey(Resignation, on_delete=models.CASCADE, related_name='reschedule_requests')
+    current_schedule = models.CharField(max_length=200)
+    requested_date = models.DateField()
+    requested_time = models.TimeField()
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    rejection_reason = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Reschedule for {self.resignation.email} to {self.requested_date} {self.requested_time}"
+
+
+class Notification(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    icon = models.CharField(max_length=50, default='notifications')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Notification for {self.user.email}: {self.title}"
+
+
+>>>>>>> e1c9fee45c83174020b760f3b6902778e55adfac
 

@@ -1,9 +1,10 @@
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from .common import IsHROrAdmin
 
 from ..models import Resignation
-from ..serializers import ResignationSerializer, ResignationFormSerializer
+from ..serializers import ResignationSerializer, ResignationFormSerializer, ExitChecklistTaskSerializer
 
 
 class ResignationListCreateView(generics.ListCreateAPIView):
@@ -205,4 +206,103 @@ class ResignationDetailView(generics.RetrieveAPIView):
         if request.user.role not in ['hr', 'admin'] and instance.email != request.user.email:
             return Response({'error': 'You do not have permission to view this resignation.'}, status=status.HTTP_403_FORBIDDEN)
         return Response(self.get_serializer(instance).data)
+
+
+class NoticePeriodView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        from ..models import SystemSettings
+        from django.utils import timezone
+        resignation = Resignation.objects.filter(email=request.user.email).exclude(status='Withdrawn').order_by('-created_at').first()
+        system_settings = SystemSettings.load()
+        notice_period_days = system_settings.notice_period
+
+        if not resignation or resignation.status == 'Draft':
+            return Response({
+                "has_active_resignation": False,
+                "days_left": 0,
+                "notice_period": notice_period_days,
+                "relieving_date": None,
+                "submission_date": None,
+                "progress_percentage": 0
+            })
+
+        today = timezone.localdate()
+        relieving_date = resignation.relieving_date
+        submission_date = resignation.submission_date
+
+        if relieving_date:
+            days_left = (relieving_date - today).days
+            days_left = max(0, days_left)
+            
+            # calculate total days of notice as defined by dates, or fall back to system settings
+            total_days = (relieving_date - submission_date).days
+            if total_days <= 0:
+                total_days = notice_period_days
+            
+            elapsed_days = total_days - days_left
+            if elapsed_days < 0:
+                elapsed_days = 0
+                
+            progress_percentage = max(0, min(100, int((elapsed_days / total_days) * 100)))
+        else:
+            days_left = 0
+            progress_percentage = 0
+
+        return Response({
+            "has_active_resignation": True,
+            "days_left": days_left,
+            "notice_period": notice_period_days,
+            "relieving_date": relieving_date.strftime('%Y-%m-%d') if relieving_date else None,
+            "submission_date": submission_date.strftime('%Y-%m-%d') if submission_date else None,
+            "progress_percentage": progress_percentage
+        })
+
+
+class ExitChecklistTaskListView(generics.ListAPIView):
+    serializer_class = ExitChecklistTaskSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        from ..models import ExitChecklistTask
+        user = self.request.user
+        resignation = Resignation.objects.filter(email=user.email).exclude(status='Withdrawn').order_by('-created_at').first()
+        if not resignation:
+            return ExitChecklistTask.objects.none()
+        return ExitChecklistTask.objects.filter(resignation=resignation)
+
+
+class ExitChecklistTaskUpdateView(generics.UpdateAPIView):
+    serializer_class = ExitChecklistTaskSerializer
+    permission_classes = [IsHROrAdmin]
+
+    def get_queryset(self):
+        from ..models import ExitChecklistTask
+        return ExitChecklistTask.objects.all()
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        status_val = request.data.get('status')
+        if status_val in ['Completed', 'Pending', 'Scheduled']:
+            instance.status = status_val
+            if status_val == 'Completed':
+                from django.utils import timezone
+                instance.completed_at = timezone.now()
+            else:
+                instance.completed_at = None
+            instance.save()
+            
+        return Response(self.get_serializer(instance).data)
+
+
+class ResignationChecklistTaskListView(generics.ListAPIView):
+    serializer_class = ExitChecklistTaskSerializer
+    permission_classes = [IsHROrAdmin]
+
+    def get_queryset(self):
+        from ..models import ExitChecklistTask
+        resignation_pk = self.kwargs.get('resignation_pk')
+        return ExitChecklistTask.objects.filter(resignation_id=resignation_pk)
 
