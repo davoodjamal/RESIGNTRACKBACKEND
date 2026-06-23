@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import Asset, AppUser
+from ..models import Asset, AppUser, AssetAuditLog
 
 class AssetSerializer(serializers.ModelSerializer):
     assignedTo = serializers.SerializerMethodField()
@@ -18,3 +18,11 @@ class AssetSerializer(serializers.ModelSerializer):
         if obj.assigned_to:
             return obj.assigned_to.email
         return ''
+
+class AssetAuditLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssetAuditLog
+        fields = [
+            'id', 'asset_id', 'asset_tag', 'action',
+            'performed_by', 'date', 'notes'
+        ]

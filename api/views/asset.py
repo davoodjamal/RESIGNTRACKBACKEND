@@ -4,14 +4,25 @@ from rest_framework.response import Response
 from django.db import transaction
 from django.utils import timezone
 from datetime import timedelta, date
-from ..models import Asset, AppUser, AuditLog
-from ..serializers import AssetSerializer, AppUserSerializer
+from ..models import Asset, AppUser, AuditLog, AssetAuditLog
+from ..serializers import AssetSerializer, AppUserSerializer, AssetAuditLogSerializer
 from .common import IsHROrAdmin
 
+from rest_framework.permissions import IsAuthenticated
+
 class AssetListCreateView(generics.ListCreateAPIView):
-    queryset = Asset.objects.all().order_by('-created_at')
     serializer_class = AssetSerializer
-    permission_classes = [IsHROrAdmin]
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [IsAuthenticated()]
+        return [IsHROrAdmin()]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated and user.role in ['hr', 'admin']:
+            return Asset.objects.all().order_by('-created_at')
+        return Asset.objects.filter(assigned_to=user).order_by('-created_at')
 
     def perform_create(self, serializer):
         # Log the registration of asset
@@ -23,10 +34,21 @@ class AssetListCreateView(generics.ListCreateAPIView):
             message=f"Asset {asset.name} ({asset.tag}) registered. Initial status: {asset.status}."
         )
 
-class AssetRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+class AssetDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Asset.objects.all()
     serializer_class = AssetSerializer
-    permission_classes = [IsHROrAdmin]
+
+    def get_permissions(self):
+        if self.request.method in ['GET', 'PUT', 'PATCH']:
+            return [IsAuthenticated()]
+        return [IsHROrAdmin()]
+
+    def get_object(self):
+        obj = super().get_object()
+        user = self.request.user
+        if user.role not in ['hr', 'admin'] and obj.assigned_to != user:
+            self.permission_denied(self.request, message="You do not have permission to access this asset.")
+        return obj
 
     def perform_update(self, serializer):
         old_status = self.get_object().status
@@ -207,3 +229,9 @@ class EmployeeListView(APIView):
                 'email': emp.email
             })
         return Response(data)
+
+class AssetAuditLogListView(generics.ListAPIView):
+    """GET /api/assets/audit/ - List all asset audit log entries."""
+    queryset = AssetAuditLog.objects.all().order_by('-date', '-id')
+    serializer_class = AssetAuditLogSerializer
+    permission_classes = [IsHROrAdmin]

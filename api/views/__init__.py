@@ -25,12 +25,13 @@ from .analytics_endpoints import AnalyticsPendingApprovalsView, AnalyticsFailedL
 from .system_usage_views import SystemUsageSnapshotView, system_usage_stream
 from .asset import (
     AssetListCreateView,
-    AssetRetrieveUpdateDestroyView,
+    AssetDetailView,
     AssetAssignView,
     AssetReturnView,
     AssetMaintenanceView,
     AssetDashboardView,
     EmployeeListView,
+    AssetAuditLogListView,
 )
 from .exit_interviews import (
     ExitInterviewListView,
@@ -38,13 +39,6 @@ from .exit_interviews import (
     LatestExitInterviewView,
     ExitInterviewAnalyticsView,
     MeetingViewSet,
-)
-from .assets import (
-    AssetListCreateView,
-    AssetDetailView,
-    AssetAssignView,
-    AssetReturnView,
-    AssetAuditLogListView,
 )
 from .reschedule import (
     RescheduleRequestCreateView,
@@ -95,7 +89,7 @@ __all__ = [
     'SystemUsageSnapshotView',
     'system_usage_stream',
     'AssetListCreateView',
-    'AssetRetrieveUpdateDestroyView',
+    'AssetDetailView',
     'AssetAssignView',
     'AssetReturnView',
     'AssetMaintenanceView',
@@ -106,9 +100,6 @@ __all__ = [
     'LatestExitInterviewView',
     'ExitInterviewAnalyticsView',
     'MeetingViewSet',
-    'AssetDetailView',
-    'AssetAssignView',
-    'AssetReturnView',
     'AssetAuditLogListView',
     'RescheduleRequestCreateView',
     'RescheduleRequestListView',
