@@ -8,6 +8,11 @@ from ..views import (
     AdminAnalyticsSyncView,
     AdminAuditLogListView,
     admin_audit_logs_stream,
+    AnalyticsPendingApprovalsView,
+    AnalyticsFailedLoginsView,
+    AnalyticsHourlyActivityView,
+    SystemUsageSnapshotView,
+    system_usage_stream,
 )
 
 urlpatterns = [
@@ -19,4 +24,9 @@ urlpatterns = [
     path('v1/admin/analytics/sync/', AdminAnalyticsSyncView.as_view(), name='admin-analytics-sync'),
     path('v1/admin/audit-logs/', AdminAuditLogListView.as_view(), name='admin-audit-logs'),
     path('v1/admin/audit-logs/stream/', admin_audit_logs_stream, name='admin-audit-logs-stream'),
+    path('analytics/approvals/pending/', AnalyticsPendingApprovalsView.as_view(), name='analytics-approvals-pending'),
+    path('analytics/logins/failed/', AnalyticsFailedLoginsView.as_view(), name='analytics-logins-failed'),
+    path('analytics/activity/hourly/', AnalyticsHourlyActivityView.as_view(), name='analytics-hourly-activity'),
+    path('v1/admin/analytics/system-usage/snapshot/', SystemUsageSnapshotView.as_view(), name='system-usage-snapshot'),
+    path('v1/admin/analytics/system-usage/stream/', system_usage_stream, name='system-usage-stream'),
 ]

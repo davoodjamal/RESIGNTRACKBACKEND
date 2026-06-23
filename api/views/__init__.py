@@ -20,6 +20,8 @@ from .profile import UserProfileView
 from .audit_views import AdminAuditLogListView, admin_audit_logs_stream
 from .system_health_view import SystemHealthV1View
 from .analytics_views import AdminAnalyticsSyncView
+from .analytics_endpoints import AnalyticsPendingApprovalsView, AnalyticsFailedLoginsView, AnalyticsHourlyActivityView
+from .system_usage_views import SystemUsageSnapshotView, system_usage_stream
 
 __all__ = [
     'login_view',
@@ -50,4 +52,9 @@ __all__ = [
     'AdminAnalyticsSyncView',
     'AdminAuditLogListView',
     'admin_audit_logs_stream',
+    'AnalyticsPendingApprovalsView',
+    'AnalyticsFailedLoginsView',
+    'AnalyticsHourlyActivityView',
+    'SystemUsageSnapshotView',
+    'system_usage_stream',
 ]
