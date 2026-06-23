@@ -182,6 +182,12 @@ class Asset(models.Model):
     due_back = models.DateField(null=True, blank=True)
     warranty_expiry = models.DateField(null=True, blank=True)
     maintenance_notes = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.tag} - {self.name}"
+
+
 class ExitChecklistTask(models.Model):
     STATUS_CHOICES = [
         ('Completed', 'Completed'),
@@ -198,21 +204,6 @@ class ExitChecklistTask(models.Model):
 
     def __str__(self):
         return f"{self.resignation.email} - {self.title} ({self.status})"
-
-
-class Asset(models.Model):
-    tag = models.CharField(max_length=100, unique=True)
-    name = models.CharField(max_length=200)
-    type = models.CharField(max_length=50, default='Laptop')
-    status = models.CharField(max_length=50, default='Available')
-    assigned_to = models.CharField(max_length=200, blank=True, default='')
-    due_back = models.DateField(null=True, blank=True)
-    warranty_expiry = models.DateField(null=True, blank=True)
-    notes = models.TextField(blank=True, default='')
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.tag} - {self.name}"
 
 
 class Meeting(models.Model):
