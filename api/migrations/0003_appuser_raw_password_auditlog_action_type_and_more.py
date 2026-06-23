@@ -11,8 +11,13 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
+            model_name='appuser',
+            name='raw_password',
+            field=models.CharField(blank=True, default='', max_length=200),
+        ),
+        migrations.AddField(
             model_name='auditlog',
-            name='action_type',
+            name='action',
             field=models.CharField(blank=True, default='SYSTEM_EVENT', max_length=100),
         ),
         migrations.AddField(
@@ -29,10 +34,5 @@ class Migration(migrations.Migration):
             model_name='auditlog',
             name='user_id',
             field=models.IntegerField(blank=True, null=True),
-        ),
-        migrations.AddField(
-            model_name='auditlog',
-            name='user_name',
-            field=models.CharField(blank=True, default='System', max_length=200),
         ),
     ]

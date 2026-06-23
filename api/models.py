@@ -169,3 +169,30 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"[{self.time}] {self.message[:60]}"
+
+
+class Asset(models.Model):
+    tag = models.CharField(max_length=50, unique=True)
+    name = models.CharField(max_length=200)
+    type = models.CharField(max_length=100)  # Laptop, Monitor, Mobile, Access Card
+    status = models.CharField(max_length=50, default='Available')  # Available, Assigned, Under Maintenance
+    assigned_to = models.ForeignKey('AppUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_assets')
+    due_back = models.DateField(null=True, blank=True)
+    warranty_expiry = models.DateField(null=True, blank=True)
+    maintenance_notes = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.tag} - {self.name}"
+
+
+class Meeting(models.Model):
+    employee = models.ForeignKey('AppUser', on_delete=models.CASCADE, related_name='meetings')
+    date = models.DateField()
+    time_slot = models.CharField(max_length=50)
+    jitsi_url = models.URLField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Meeting with {self.employee.username} on {self.date}"
+

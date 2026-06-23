@@ -9,6 +9,7 @@ from ..views import (
     ResignationDetailView,
     DashboardSummaryView,
     EmployeeResignationStatusView,
+    EmployeeDetailView,
 )
 
 urlpatterns = [
@@ -21,4 +22,5 @@ urlpatterns = [
     path('resignations/<int:pk>/withdraw/', ResignationWithdrawView.as_view(), name='resignation-withdraw'),
     path('resignations/<int:pk>/feedback/', ResignationFeedbackView.as_view(), name='resignation-feedback'),
     path('dashboard/', DashboardSummaryView.as_view(), name='dashboard-summary'),
+    path('employees/<int:pk>/', EmployeeDetailView.as_view(), name='employee-detail'),
 ]

@@ -10,6 +10,7 @@ from .employee import (
     DashboardSummaryView,
     EmployeeResignationStatusView,
 )
+from .employee_detail import EmployeeDetailView
 from .hr import ResignationUpdateView, settings_view, AuditLogListCreateView
 from .admin import UserListView, UserDetailView, DashboardMetricsView, SystemHealthView
 from .profile import UserProfileView
@@ -18,6 +19,22 @@ from .system_health_view import SystemHealthV1View
 from .analytics_views import AdminAnalyticsSyncView
 from .analytics_endpoints import AnalyticsPendingApprovalsView, AnalyticsFailedLoginsView, AnalyticsHourlyActivityView
 from .system_usage_views import SystemUsageSnapshotView, system_usage_stream
+from .asset import (
+    AssetListCreateView,
+    AssetRetrieveUpdateDestroyView,
+    AssetAssignView,
+    AssetReturnView,
+    AssetMaintenanceView,
+    AssetDashboardView,
+    EmployeeListView,
+)
+from .exit_interviews import (
+    ExitInterviewListView,
+    ExitInterviewDetailView,
+    LatestExitInterviewView,
+    ExitInterviewAnalyticsView,
+    MeetingViewSet,
+)
 
 __all__ = [
     'login_view',
@@ -32,6 +49,7 @@ __all__ = [
     'ResignationDetailView',
     'DashboardSummaryView',
     'EmployeeResignationStatusView',
+    'EmployeeDetailView',
     'ResignationUpdateView',
     'settings_view',
     'AuditLogListCreateView',
@@ -49,4 +67,16 @@ __all__ = [
     'AnalyticsHourlyActivityView',
     'SystemUsageSnapshotView',
     'system_usage_stream',
+    'AssetListCreateView',
+    'AssetRetrieveUpdateDestroyView',
+    'AssetAssignView',
+    'AssetReturnView',
+    'AssetMaintenanceView',
+    'AssetDashboardView',
+    'EmployeeListView',
+    'ExitInterviewListView',
+    'ExitInterviewDetailView',
+    'LatestExitInterviewView',
+    'ExitInterviewAnalyticsView',
+    'MeetingViewSet',
 ]
