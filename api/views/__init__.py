@@ -22,6 +22,25 @@ from .system_health_view import SystemHealthV1View
 from .analytics_views import AdminAnalyticsSyncView
 from .analytics_endpoints import AnalyticsPendingApprovalsView, AnalyticsFailedLoginsView, AnalyticsHourlyActivityView
 from .system_usage_views import SystemUsageSnapshotView, system_usage_stream
+from .assets import (
+    AssetListCreateView,
+    AssetDetailView,
+    AssetAssignView,
+    AssetReturnView,
+    AssetAuditLogListView,
+)
+from .reschedule import (
+    RescheduleRequestCreateView,
+    RescheduleRequestListView,
+    RescheduleRequestDecisionView,
+)
+from .notification import (
+    NotificationListView,
+    NotificationMarkReadAllView,
+    NotificationMarkReadView,
+    create_notification,
+)
+from .search import GlobalSearchView
 
 __all__ = [
     'login_view',
@@ -57,4 +76,21 @@ __all__ = [
     'AnalyticsHourlyActivityView',
     'SystemUsageSnapshotView',
     'system_usage_stream',
+    'AssetListCreateView',
+    'AssetDetailView',
+    'AssetAssignView',
+    'AssetReturnView',
+    'AssetAuditLogListView',
+    'RescheduleRequestCreateView',
+    'RescheduleRequestListView',
+    'RescheduleRequestDecisionView',
+    'NotificationListView',
+    'NotificationMarkReadAllView',
+    'NotificationMarkReadView',
+    'create_notification',
+    'GlobalSearchView',
 ]
+
+
+
+
