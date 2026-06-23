@@ -9,6 +9,10 @@ from .employee import (
     ResignationDetailView,
     DashboardSummaryView,
     EmployeeResignationStatusView,
+    NoticePeriodView,
+    ExitChecklistTaskListView,
+    ExitChecklistTaskUpdateView,
+    ResignationChecklistTaskListView,
 )
 from .hr import ResignationUpdateView, settings_view, AuditLogListCreateView
 from .admin import UserListView, UserDetailView, DashboardMetricsView, SystemHealthView
@@ -30,6 +34,10 @@ __all__ = [
     'ResignationDetailView',
     'DashboardSummaryView',
     'EmployeeResignationStatusView',
+    'NoticePeriodView',
+    'ExitChecklistTaskListView',
+    'ExitChecklistTaskUpdateView',
+    'ResignationChecklistTaskListView',
     'ResignationUpdateView',
     'settings_view',
     'AuditLogListCreateView',

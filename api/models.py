@@ -169,3 +169,21 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"[{self.time}] {self.message[:60]}"
+
+
+class ExitChecklistTask(models.Model):
+    STATUS_CHOICES = [
+        ('Completed', 'Completed'),
+        ('Pending', 'Pending'),
+        ('Scheduled', 'Scheduled'),
+    ]
+    resignation = models.ForeignKey(Resignation, on_delete=models.CASCADE, related_name='checklist_tasks')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    department = models.CharField(max_length=100, blank=True, default='')
+    due_date = models.DateField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.resignation.email} - {self.title} ({self.status})"
