@@ -9,6 +9,16 @@ class EmployeeDetailView(generics.RetrieveAPIView):
     permission_classes = [IsHROrAdmin]
 
     def retrieve(self, request, *args, **kwargs):
+        def get_stars_str(rating):
+            if rating is not None and rating != '' and rating != 0:
+                try:
+                    r = int(rating)
+                    if 1 <= r <= 5:
+                        return " ".join(['★'] * r + ['☆'] * (5 - r))
+                except (ValueError, TypeError):
+                    pass
+            return 'N/A'
+
         user = self.get_object()
         
         # Determine status
@@ -16,13 +26,10 @@ class EmployeeDetailView(generics.RetrieveAPIView):
         res = Resignation.objects.filter(email=user.email).order_by('-created_at').first()
         if res:
             if res.status == 'Approved':
-                if res.relieving_date and res.relieving_date < timezone.now().date():
-                    status_val = 'Resigned'
-                else:
-                    status_val = 'In-Notice'
-            elif res.status == 'Pending':
+                status_val = 'Resigned'
+            elif res.status in ['Pending', 'More Info Requested']:
                 status_val = 'In-Notice'
-            elif res.status in ['Rejected', 'Withdrawn']:
+            elif res.status in ['Rejected', 'Withdrawn', 'Draft']:
                 status_val = 'Active'
                 
         # Basic details
@@ -48,7 +55,24 @@ class EmployeeDetailView(generics.RetrieveAPIView):
             'workLocation': 'Office',
             'joinDate': join_date_str,
             'status': status_val,
+            'resignationStatus': res.status if res else None,
+            'isEmergencyRequested': (res.exit_feedback.get('emergencyReleaseRequested', False) or res.exit_feedback.get('immediate_release', False)) if (res and isinstance(res.exit_feedback, dict)) else False,
         }
+
+        if res:
+            ef = res.exit_feedback if (res.exit_feedback and isinstance(res.exit_feedback, dict)) else {}
+            data['initialResignation'] = {
+                'reason': res.reason or '',
+                'elaboration': res.comments or '',
+                'immediateRelease': ef.get('immediate_release', False) or ef.get('emergencyReleaseRequested', False),
+                'emergencyReason': ef.get('emergencyReason', ''),
+                'emergencyRemarks': ef.get('emergencyRemarks', ''),
+                'proposedLastWorkingDay': res.relieving_date.strftime('%Y-%m-%d') if res.relieving_date else '',
+                'additionalFeedback': ef.get('additional_feedback', ''),
+                'hrRemarks': ef.get('hr_remarks', '')
+            }
+        else:
+            data['initialResignation'] = None
 
         # Query real assets assigned to the employee
         assigned_assets_qs = Asset.objects.filter(assigned_to=user)
@@ -104,79 +128,128 @@ class EmployeeDetailView(generics.RetrieveAPIView):
             }
 
             # Exit Interview Feedback
-            ef = res.exit_feedback if (res.exit_feedback and isinstance(res.exit_feedback, dict)) else {}
-            
-            # Calculate rating (cultureRating or similar)
-            ratings = [ef.get('roleRating', 0), ef.get('managerRating', 0), ef.get('growthRating', 0), ef.get('cultureRating', 0), ef.get('compensationRating', 0)]
-            valid_ratings = [r for r in ratings if r is not None and r > 0]
-            avg_rating = sum(valid_ratings) / len(valid_ratings) if valid_ratings else 4.0
-            
-            max_rating = max(valid_ratings) if valid_ratings else 0
-            if max_rating > 5:
-                scaled_rating = round(avg_rating, 1)
+            from ..models import ExitInterview
+            exit_int = ExitInterview.objects.filter(resignation=res).first()
+            if exit_int:
+                scaled_rating = exit_int.exit_rating if exit_int.exit_rating is not None else 0.0
+                qa_list = [
+                    {'question': '1. Primary reason for resignation?', 'answer': exit_int.reason_for_resignation or 'N/A'},
+                    {'question': '2. Role & Responsibilities Satisfaction?', 'answer': get_stars_str(exit_int.role_satisfaction)},
+                    {'question': '3. Manager Relationship?', 'answer': get_stars_str(exit_int.manager_relationship)},
+                    {'question': '4. Career Growth Opportunities?', 'answer': get_stars_str(exit_int.career_growth)},
+                    {'question': '5. Company Culture & Environment?', 'answer': get_stars_str(exit_int.company_culture)},
+                    {'question': '6. Did you receive adequate training and support?', 'answer': exit_int.adequate_training or 'N/A'},
+                    {'question': '7. What did you enjoy most about working here?', 'answer': exit_int.most_enjoyed or 'N/A'},
+                    {'question': '8. Suggested improvements for the role or company?', 'answer': exit_int.suggested_improvements or 'N/A'},
+                    {'question': '9. RECOMMEND TO OTHERS?', 'answer': exit_int.recommend_to_others or 'N/A'},
+                    {'question': '10. CONSIDER REJOINING?', 'answer': exit_int.consider_rejoining or 'N/A'},
+                ]
+                data['exitInterview'] = {
+                    'rating': scaled_rating,
+                    'date': exit_int.interview_date.strftime('%Y-%m-%d') if exit_int.interview_date else (exit_int.created_at.date().strftime('%Y-%m-%d') if exit_int.created_at else timezone.now().date().strftime('%Y-%m-%d')),
+                    'feedback': exit_int.suggested_improvements or res.comments or 'No feedback provided yet.',
+                    'qa': qa_list
+                }
             else:
-                scaled_rating = round(avg_rating * 2, 1)
-
-            qa_list = [
-                {'question': '1. Primary reason for resignation?', 'answer': ef.get('reason', res.reason or 'N/A')},
-                {'question': '7. What did you enjoy most about working here?', 'answer': ef.get('enjoyText', 'N/A')},
-                {'question': '8. Suggested improvements for the role or company?', 'answer': ef.get('improveText', 'N/A')},
-                {'question': '9. Recommend to others?', 'answer': ef.get('recommend', 'N/A')},
-                {'question': '10. Consider rejoining?', 'answer': ef.get('rejoin', 'N/A')},
-            ]
-
-            data['exitInterview'] = {
-                'rating': scaled_rating,
-                'date': res.created_at.date().strftime('%Y-%m-%d') if res.created_at else timezone.now().date().strftime('%Y-%m-%d'),
-                'feedback': ef.get('additional_feedback', res.comments or 'No feedback provided yet.'),
-                'qa': qa_list
-            }
+                ef = res.exit_feedback if (res.exit_feedback and isinstance(res.exit_feedback, dict)) else {}
+                ratings = [ef.get('roleRating', 0), ef.get('managerRating', 0), ef.get('growthRating', 0), ef.get('cultureRating', 0), ef.get('compensationRating', 0)]
+                valid_ratings = [r for r in ratings if r is not None and r > 0]
+                avg_rating = sum(valid_ratings) / len(valid_ratings) if valid_ratings else 4.0
+                max_rating = max(valid_ratings) if valid_ratings else 0
+                if max_rating > 5:
+                    scaled_rating = round(avg_rating, 1)
+                else:
+                    scaled_rating = round(avg_rating * 2, 1)
+                qa_list = [
+                    {'question': '1. Primary reason for resignation?', 'answer': ef.get('reason', res.reason or 'N/A')},
+                    {'question': '2. Role & Responsibilities Satisfaction?', 'answer': get_stars_str(ef.get('roleRating'))},
+                    {'question': '3. Manager Relationship?', 'answer': get_stars_str(ef.get('managerRating'))},
+                    {'question': '4. Career Growth Opportunities?', 'answer': get_stars_str(ef.get('growthRating'))},
+                    {'question': '5. Company Culture & Environment?', 'answer': get_stars_str(ef.get('cultureRating'))},
+                    {'question': '6. Did you receive adequate training and support?', 'answer': 'Yes, absolutely' if ef.get('training') == 'yes' else ('No, it was lacking' if ef.get('training') == 'no' else ef.get('training', 'N/A'))},
+                    {'question': '7. What did you enjoy most about working here?', 'answer': ef.get('enjoyText', 'N/A')},
+                    {'question': '8. Suggested improvements for the role or company?', 'answer': ef.get('improveText', 'N/A')},
+                    {'question': '9. RECOMMEND TO OTHERS?', 'answer': 'Yes' if ef.get('recommend') == 'yes' else ('No' if ef.get('recommend') == 'no' else ef.get('recommend', 'N/A'))},
+                    {'question': '10. CONSIDER REJOINING?', 'answer': 'Yes' if ef.get('rejoin') == 'yes' else ('No' if ef.get('rejoin') == 'no' else ef.get('rejoin', 'N/A'))},
+                ]
+                data['exitInterview'] = {
+                    'rating': scaled_rating,
+                    'date': res.created_at.date().strftime('%Y-%m-%d') if res.created_at else timezone.now().date().strftime('%Y-%m-%d'),
+                    'feedback': ef.get('additional_feedback', res.comments or 'No feedback provided yet.'),
+                    'qa': qa_list
+                }
 
             # Tasks/Exit Checklist
-            has_exit_feedback = bool(res.exit_feedback)
+            from ..models import ExitChecklistTask
+            tasks_qs = ExitChecklistTask.objects.filter(resignation=res)
             data['tasks'] = [
-                {'name': 'Return assets', 'status': 'Completed' if res.status == 'Approved' else 'Pending'},
-                {'name': 'Knowledge Transfer', 'status': 'Pending'},
-                {'name': 'Exit Interview', 'status': 'Completed' if has_exit_feedback else 'Pending'},
+                {'name': t.title, 'status': t.status}
+                for t in tasks_qs
             ]
 
             # Assigned Assets for Notice Status
             data['assets'] = assets_list
 
-            data['remarks'] = res.comments or 'No official HR remarks recorded.'
+            data['remarks'] = res.comments or 'No remarks recorded.'
 
         elif status_val == 'Resigned':
             # Resigned should contain details, feedback, primary reason
-            ef = res.exit_feedback if (res.exit_feedback and isinstance(res.exit_feedback, dict)) else {}
-            
-            # Calculate rating (cultureRating or similar)
-            ratings = [ef.get('roleRating', 0), ef.get('managerRating', 0), ef.get('growthRating', 0), ef.get('cultureRating', 0), ef.get('compensationRating', 0)]
-            valid_ratings = [r for r in ratings if r is not None and r > 0]
-            avg_rating = sum(valid_ratings) / len(valid_ratings) if valid_ratings else 4.0
-            
-            max_rating = max(valid_ratings) if valid_ratings else 0
-            if max_rating > 5:
-                scaled_rating = round(avg_rating, 1)
+            from ..models import ExitInterview
+            exit_int = ExitInterview.objects.filter(resignation=res).first()
+            if exit_int:
+                scaled_rating = exit_int.exit_rating if exit_int.exit_rating is not None else 0.0
+                qa_list = [
+                    {'question': '1. Primary reason for resignation?', 'answer': exit_int.reason_for_resignation or 'N/A'},
+                    {'question': '2. Role & Responsibilities Satisfaction?', 'answer': get_stars_str(exit_int.role_satisfaction)},
+                    {'question': '3. Manager Relationship?', 'answer': get_stars_str(exit_int.manager_relationship)},
+                    {'question': '4. Career Growth Opportunities?', 'answer': get_stars_str(exit_int.career_growth)},
+                    {'question': '5. Company Culture & Environment?', 'answer': get_stars_str(exit_int.company_culture)},
+                    {'question': '6. Did you receive adequate training and support?', 'answer': exit_int.adequate_training or 'N/A'},
+                    {'question': '7. What did you enjoy most about working here?', 'answer': exit_int.most_enjoyed or 'N/A'},
+                    {'question': '8. Suggested improvements for the role or company?', 'answer': exit_int.suggested_improvements or 'N/A'},
+                    {'question': '9. RECOMMEND TO OTHERS?', 'answer': exit_int.recommend_to_others or 'N/A'},
+                    {'question': '10. CONSIDER REJOINING?', 'answer': exit_int.consider_rejoining or 'N/A'},
+                ]
+                data['exitInterview'] = {
+                    'rating': scaled_rating,
+                    'date': exit_int.interview_date.strftime('%Y-%m-%d') if exit_int.interview_date else (exit_int.created_at.date().strftime('%Y-%m-%d') if exit_int.created_at else timezone.now().date().strftime('%Y-%m-%d')),
+                    'feedback': exit_int.suggested_improvements or res.comments or 'No feedback provided.',
+                    'qa': qa_list
+                }
+                data['resignedDate'] = res.relieving_date.strftime('%Y-%m-%d') if res.relieving_date else (res.created_at.date().strftime('%Y-%m-%d') if res.created_at else timezone.now().date().strftime('%Y-%m-%d'))
+                data['primaryReason'] = exit_int.reason_for_resignation or 'N/A'
+                data['reason'] = exit_int.reason_for_resignation or 'N/A'
             else:
-                scaled_rating = round(avg_rating * 2, 1)
-
-            qa_list = [
-                {'question': '1. Primary reason for resignation?', 'answer': ef.get('reason', res.reason or 'N/A')},
-                {'question': '7. What did you enjoy most about working here?', 'answer': ef.get('enjoyText', 'N/A')},
-                {'question': '8. Suggested improvements for the role or company?', 'answer': ef.get('improveText', 'N/A')},
-                {'question': '9. Recommend to others?', 'answer': ef.get('recommend', 'N/A')},
-                {'question': '10. Consider rejoining?', 'answer': ef.get('rejoin', 'N/A')},
-            ]
-
-            data['exitInterview'] = {
-                'rating': scaled_rating,
-                'date': res.created_at.date().strftime('%Y-%m-%d') if res.created_at else timezone.now().date().strftime('%Y-%m-%d'),
-                'feedback': ef.get('additional_feedback', res.comments or 'No feedback provided.'),
-                'qa': qa_list
-            }
-            data['resignedDate'] = res.relieving_date.strftime('%Y-%m-%d') if res.relieving_date else res.created_at.date().strftime('%Y-%m-%d')
-            data['primaryReason'] = ef.get('reason', res.reason or 'N/A')
-            data['reason'] = ef.get('reason', res.reason or 'N/A')
+                ef = res.exit_feedback if (res.exit_feedback and isinstance(res.exit_feedback, dict)) else {}
+                ratings = [ef.get('roleRating', 0), ef.get('managerRating', 0), ef.get('growthRating', 0), ef.get('cultureRating', 0), ef.get('compensationRating', 0)]
+                valid_ratings = [r for r in ratings if r is not None and r > 0]
+                avg_rating = sum(valid_ratings) / len(valid_ratings) if valid_ratings else 4.0
+                max_rating = max(valid_ratings) if valid_ratings else 0
+                if max_rating > 5:
+                    scaled_rating = round(avg_rating, 1)
+                else:
+                    scaled_rating = round(avg_rating * 2, 1)
+                qa_list = [
+                    {'question': '1. Primary reason for resignation?', 'answer': ef.get('reason', res.reason or 'N/A')},
+                    {'question': '2. Role & Responsibilities Satisfaction?', 'answer': get_stars_str(ef.get('roleRating'))},
+                    {'question': '3. Manager Relationship?', 'answer': get_stars_str(ef.get('managerRating'))},
+                    {'question': '4. Career Growth Opportunities?', 'answer': get_stars_str(ef.get('growthRating'))},
+                    {'question': '5. Company Culture & Environment?', 'answer': get_stars_str(ef.get('cultureRating'))},
+                    {'question': '6. Did you receive adequate training and support?', 'answer': 'Yes, absolutely' if ef.get('training') == 'yes' else ('No, it was lacking' if ef.get('training') == 'no' else ef.get('training', 'N/A'))},
+                    {'question': '7. What did you enjoy most about working here?', 'answer': ef.get('enjoyText', 'N/A')},
+                    {'question': '8. Suggested improvements for the role or company?', 'answer': ef.get('improveText', 'N/A')},
+                    {'question': '9. RECOMMEND TO OTHERS?', 'answer': 'Yes' if ef.get('recommend') == 'yes' else ('No' if ef.get('recommend') == 'no' else ef.get('recommend', 'N/A'))},
+                    {'question': '10. CONSIDER REJOINING?', 'answer': 'Yes' if ef.get('rejoin') == 'yes' else ('No' if ef.get('rejoin') == 'no' else ef.get('rejoin', 'N/A'))},
+                ]
+                data['exitInterview'] = {
+                    'rating': scaled_rating,
+                    'date': res.created_at.date().strftime('%Y-%m-%d') if res.created_at else timezone.now().date().strftime('%Y-%m-%d'),
+                    'feedback': ef.get('additional_feedback', res.comments or 'No feedback provided.'),
+                    'qa': qa_list
+                }
+                data['resignedDate'] = res.relieving_date.strftime('%Y-%m-%d') if res.relieving_date else res.created_at.date().strftime('%Y-%m-%d')
+                data['primaryReason'] = ef.get('reason', res.reason or 'N/A')
+                data['reason'] = ef.get('reason', res.reason or 'N/A')
             data['assets'] = []
             data['tasks'] = []
             data['noticePeriod'] = None

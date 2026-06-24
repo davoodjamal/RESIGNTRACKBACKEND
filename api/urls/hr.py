@@ -23,9 +23,15 @@ from ..views import (
     NotificationMarkReadAllView,
     NotificationMarkReadView,
     GlobalSearchView,
+    HREmployeeExitInterviewView,
+    ResignationProcessView,
+    ExEmployeeListView,
 )
 
 urlpatterns = [
+    path('resignation/process', ResignationProcessView.as_view(), name='resignation-process-no-slash'),
+    path('resignation/process/', ResignationProcessView.as_view(), name='resignation-process'),
+    path('v1/hr/directory/employee/<int:id>/exit-interview', HREmployeeExitInterviewView.as_view(), name='hr-employee-exit-interview'),
     path('resignations/<int:pk>/', ResignationUpdateView.as_view(), name='resignation-update'),
     path('settings/', settings_view, name='settings'),
     path('audit-logs/', AuditLogListCreateView.as_view(), name='audit-log-list'),
@@ -36,6 +42,7 @@ urlpatterns = [
     path('assets/<int:pk>/maintenance/', AssetMaintenanceView.as_view(), name='asset-maintenance'),
     path('assets/dashboard/', AssetDashboardView.as_view(), name='asset-dashboard'),
     path('employees/', EmployeeListView.as_view(), name='employee-list'),
+    path('ex-employees/', ExEmployeeListView.as_view(), name='ex-employee-list'),
     
     # Exit Interview Endpoints
     path('exit-interviews/', ExitInterviewListView.as_view(), name='exit-interview-list'),
@@ -45,6 +52,8 @@ urlpatterns = [
     
     # Jitsi Meeting Endpoints
     path('meetings/', MeetingViewSet.as_view({'get': 'list', 'post': 'create'}), name='meeting-list'),
+    path('exit-meetings', MeetingViewSet.as_view({'post': 'create'}), name='exit-meeting-create-no-slash'),
+    path('exit-meetings/', MeetingViewSet.as_view({'post': 'create'}), name='exit-meeting-create'),
     path('meetings/<int:pk>/', MeetingViewSet.as_view({'get': 'retrieve', 'put': 'update', 'patch': 'partial_update', 'delete': 'destroy'}), name='meeting-detail'),
     path('assets/audit/', AssetAuditLogListView.as_view(), name='asset-audit-log-list'),
     path('resignations/reschedule/', RescheduleRequestCreateView.as_view(), name='reschedule-create'),

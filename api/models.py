@@ -85,10 +85,12 @@ class Resignation(models.Model):
     """Employee resignation request."""
     STATUS_CHOICES = [
         ('Draft', 'Draft'),
+        ('Awaiting Exit Interview', 'Awaiting Exit Interview'),
         ('Pending', 'Pending'),
         ('Approved', 'Approved'),
         ('Rejected', 'Rejected'),
         ('Withdrawn', 'Withdrawn'),
+        ('More Info Requested', 'More Info Requested'),
     ]
     email = models.EmailField()
     name = models.CharField(max_length=200)
@@ -97,7 +99,7 @@ class Resignation(models.Model):
     submission_date = models.DateField(auto_now_add=True)
     relieving_date = models.DateField(null=True, blank=True)
     comments = models.TextField(blank=True, default='')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='Pending')
     exit_feedback = models.JSONField(default=dict, blank=True)
     meeting_schedule = models.CharField(max_length=200, default='Today, 2:00 PM')
     meeting_status = models.CharField(max_length=100, default='Scheduled')
@@ -259,6 +261,40 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"Notification for {self.user.email}: {self.title}"
+
+
+class ExitInterview(models.Model):
+    STATUS_CHOICES = [
+        ('DRAFT', 'DRAFT'),
+        ('SUBMITTED', 'SUBMITTED'),
+    ]
+    employee = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='exit_interviews')
+    resignation = models.ForeignKey(Resignation, on_delete=models.CASCADE, related_name='exit_interviews')
+    employee_id_code = models.CharField(max_length=50, blank=True, default='')
+    employee_name = models.CharField(max_length=200, blank=True, default='')
+    last_working_day = models.DateField(null=True, blank=True)
+    interview_date = models.DateField(null=True, blank=True)
+    exit_rating = models.FloatField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
+    
+    # Questionnaire responses
+    reason_for_resignation = models.TextField(blank=True, default='')
+    role_satisfaction = models.IntegerField(null=True, blank=True)
+    manager_relationship = models.IntegerField(null=True, blank=True)
+    career_growth = models.IntegerField(null=True, blank=True)
+    company_culture = models.IntegerField(null=True, blank=True)
+    adequate_training = models.CharField(max_length=50, blank=True, default='')
+    most_enjoyed = models.TextField(blank=True, default='')
+    suggested_improvements = models.TextField(blank=True, default='')
+    recommend_to_others = models.CharField(max_length=10, blank=True, default='')
+    consider_rejoining = models.CharField(max_length=10, blank=True, default='')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Exit Interview for {self.employee_name} ({self.status})"
+
 
 
 

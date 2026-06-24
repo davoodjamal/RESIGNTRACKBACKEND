@@ -61,13 +61,14 @@ class AdminAnalyticsSyncView(APIView):
 
         # 2. Exit Reasons percentages
         total_resignations = Resignation.objects.count()
-        reasons_list = ['Career Growth', 'Compensation', 'Work-Life Balance', 'Management', 'Other']
+        reasons_list = ['Career Growth', 'Better Opportunity', 'Higher Education', 'Health & Medical', 'Personal Reasons', 'Other']
         colors = {
             'Career Growth': '#00dbe9',
-            'Compensation': '#00dbe9',
-            'Work-Life Balance': '#00dbe9',
-            'Management': '#505f76',
-            'Other': '#3b494b'
+            'Better Opportunity': '#f43f5e',
+            'Higher Education': '#10b981',
+            'Health & Medical': '#eab308',
+            'Personal Reasons': '#a855f7',
+            'Other': '#8b5cf6'
         }
         
         exit_reasons = []
@@ -90,11 +91,12 @@ class AdminAnalyticsSyncView(APIView):
 
         if total_resignations == 0:
             exit_reasons = [
-                { 'label': 'Career Growth', 'pct': 35, 'count': 35, 'color': '#00dbe9' },
-                { 'label': 'Compensation', 'pct': 25, 'count': 25, 'color': '#f43f5e' },
-                { 'label': 'Work-Life Balance', 'pct': 20, 'count': 20, 'color': '#10b981' },
-                { 'label': 'Management', 'pct': 10, 'count': 10, 'color': '#eab308' },
-                { 'label': 'Other', 'pct': 10, 'count': 10, 'color': '#8b5cf6' }
+                { 'label': 'Career Growth', 'pct': 30, 'count': 30, 'color': '#00dbe9' },
+                { 'label': 'Better Opportunity', 'pct': 25, 'count': 25, 'color': '#f43f5e' },
+                { 'label': 'Higher Education', 'pct': 15, 'count': 15, 'color': '#10b981' },
+                { 'label': 'Health & Medical', 'pct': 10, 'count': 10, 'color': '#eab308' },
+                { 'label': 'Personal Reasons', 'pct': 12, 'count': 12, 'color': '#a855f7' },
+                { 'label': 'Other', 'pct': 8, 'count': 8, 'color': '#8b5cf6' }
             ]
 
         # 3. Usage metrics

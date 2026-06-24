@@ -14,9 +14,11 @@ from ..views import (
     ExitChecklistTaskListView,
     ExitChecklistTaskUpdateView,
     ResignationChecklistTaskListView,
+    ExitInterviewSubmitView,
 )
 
 urlpatterns = [
+    path('v1/employee/exit-interview', ExitInterviewSubmitView.as_view(), name='employee-exit-interview'),
     path('resignations/', ResignationListCreateView.as_view(), name='resignation-list'),
     path('resignations/draft/', ResignationDraftView.as_view(), name='resignation-draft'),
     path('resignations/draft/<int:pk>/', ResignationDraftUpdateView.as_view(), name='resignation-draft-update'),

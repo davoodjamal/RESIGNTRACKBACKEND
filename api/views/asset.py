@@ -166,13 +166,16 @@ class AssetMaintenanceView(APIView):
 
         if target_status == 'Under Maintenance' and asset.status == 'Assigned':
             return Response({'error': 'Cannot put assigned asset into maintenance. Return it first.'}, status=status.HTTP_400_BAD_REQUEST)
+        if target_status == 'Disposed' and asset.status == 'Assigned':
+            return Response({'error': 'Cannot dispose assigned asset. Return it first.'}, status=status.HTTP_400_BAD_REQUEST)
 
         old_status = asset.status
         asset.status = target_status
-        if target_status == 'Under Maintenance':
+        if target_status in ['Under Maintenance', 'Disposed']:
             asset.assigned_to = None
             asset.due_back = None
-            notes = request.data.get('notes', 'Moved to maintenance')
+            action_label = 'Moved to maintenance' if target_status == 'Under Maintenance' else 'Disposed'
+            notes = request.data.get('notes', action_label)
             if notes:
                 asset.maintenance_notes = notes
         asset.save()
@@ -180,7 +183,7 @@ class AssetMaintenanceView(APIView):
         # Log action
         AuditLog.objects.create(
             user_id=request.user.id if request.user.is_authenticated else None,
-            action='Asset Maintenance',
+            action='Asset Maintenance' if target_status == 'Under Maintenance' else 'Asset Disposed',
             target=asset.tag,
             message=f"Asset {asset.name} ({asset.tag}) status changed from {old_status} to {asset.status}."
         )
@@ -224,6 +227,7 @@ class EmployeeListView(APIView):
         data = []
         for emp in employees:
             data.append({
+                'id': emp.id,
                 'name': emp.full_name or emp.username,
                 'role': emp.designation or 'Employee',
                 'email': emp.email

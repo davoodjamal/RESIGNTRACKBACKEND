@@ -2,7 +2,7 @@ from rest_framework import serializers
 from ..models import AppUser, SystemSettings, AuditLog
 
 class ResignationStatusSerializer(serializers.Serializer):
-    status = serializers.ChoiceField(choices=['Pending', 'Approved', 'Rejected', 'Withdrawn'])
+    status = serializers.ChoiceField(choices=['Pending', 'Approved', 'Rejected', 'Withdrawn', 'More Info Requested'])
 
 class SystemSettingsSerializer(serializers.ModelSerializer):
     noticePeriod = serializers.IntegerField(source='notice_period')

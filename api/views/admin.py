@@ -31,10 +31,7 @@ class UserListView(generics.ListCreateAPIView):
                     user_status = 'active'
                     if res:
                         if res.status == 'Approved':
-                            if res.relieving_date and res.relieving_date < timezone.now().date():
-                                user_status = 'resigned'
-                            else:
-                                user_status = 'in-notice'
+                            user_status = 'resigned'
                         elif res.status == 'Pending':
                             user_status = 'in-notice'
                         elif res.status == 'Rejected' or res.status == 'Withdrawn':
