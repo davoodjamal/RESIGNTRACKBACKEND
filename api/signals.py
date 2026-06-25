@@ -37,7 +37,7 @@ def send_resignation_email_alert(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=Resignation)
 def create_default_checklist_tasks(sender, instance, created, **kwargs):
-    if instance.status in ['Pending', 'Approved']:
+    if instance.status in ['Pending', 'Approved', 'Pending HR Review', 'Exit Interview Pending', 'Exit Interview Submitted', 'Awaiting Approval']:
         if not instance.checklist_tasks.exists():
             default_tasks = [
                 {

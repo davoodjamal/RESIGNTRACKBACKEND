@@ -87,6 +87,10 @@ class Resignation(models.Model):
         ('Draft', 'Draft'),
         ('Awaiting Exit Interview', 'Awaiting Exit Interview'),
         ('Pending', 'Pending'),
+        ('Pending HR Review', 'Pending HR Review'),
+        ('Exit Interview Pending', 'Exit Interview Pending'),
+        ('Exit Interview Submitted', 'Exit Interview Submitted'),
+        ('Awaiting Approval', 'Awaiting Approval'),
         ('Approved', 'Approved'),
         ('Rejected', 'Rejected'),
         ('Withdrawn', 'Withdrawn'),
@@ -145,7 +149,7 @@ class SystemSettings(models.Model):
 class AuditLog(models.Model):
     """Timestamped audit trail entry."""
     time = models.DateTimeField(auto_now_add=True)
-    user_id = models.IntegerField(null=True, blank=True)
+    user = models.ForeignKey('AppUser', on_delete=models.SET_NULL, null=True, blank=True, db_column='user_id')
     action = models.CharField(max_length=100, blank=True, default='SYSTEM_EVENT')
     target = models.CharField(max_length=300, blank=True, default='')
     ip_address = models.CharField(max_length=45, blank=True, default='127.0.0.1')

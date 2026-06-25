@@ -31,10 +31,13 @@ class UserListView(generics.ListCreateAPIView):
                     user_status = 'active'
                     if res:
                         if res.status == 'Approved':
-                            user_status = 'resigned'
-                        elif res.status == 'Pending':
+                            if res.relieving_date and res.relieving_date > timezone.localdate():
+                                user_status = 'in-notice'
+                            else:
+                                user_status = 'resigned'
+                        elif res.status in ['Pending', 'More Info Requested', 'Pending HR Review', 'Exit Interview Pending', 'Exit Interview Submitted', 'Awaiting Exit Interview', 'Awaiting Approval']:
                             user_status = 'in-notice'
-                        elif res.status == 'Rejected' or res.status == 'Withdrawn':
+                        elif res.status in ['Rejected', 'Withdrawn', 'Draft']:
                             user_status = 'active'
                     
                     if status_filter_lower in ['in notice', 'in-notice']:

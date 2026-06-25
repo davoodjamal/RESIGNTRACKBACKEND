@@ -144,6 +144,23 @@ class AssetReturnView(APIView):
             message=f"Asset {asset.name} ({asset.tag}) returned by {emp_name} ({emp_email}). Condition: {condition}. Remarks: {remarks}."
         )
 
+        # Check if the employee has any other assigned assets
+        if employee:
+            assigned_assets_exist = Asset.objects.filter(assigned_to=employee, status='Assigned').exists()
+            if not assigned_assets_exist:
+                from ..models import Resignation
+                res = Resignation.objects.filter(email=employee.email).order_by('-created_at').first()
+                if res:
+                    from ..models import ExitChecklistTask
+                    from django.utils import timezone
+                    ExitChecklistTask.objects.filter(
+                        resignation=res,
+                        title__icontains='Return Laptop'
+                    ).update(
+                        status='Completed',
+                        completed_at=timezone.now()
+                    )
+
         return Response(AssetSerializer(asset).data, status=status.HTTP_200_OK)
 
 class AssetMaintenanceView(APIView):

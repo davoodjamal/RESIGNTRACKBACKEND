@@ -181,7 +181,7 @@ class ResignationSubmitView(generics.GenericAPIView):
             draft = Resignation.objects.filter(email=request.user.email, status__in=['Draft', 'More Info Requested']).order_by('-created_at').first()
 
         system_settings = SystemSettings.load()
-        target_status = 'Approved' if system_settings.auto_approve else 'Pending'
+        target_status = 'Approved' if system_settings.auto_approve else 'Pending HR Review'
 
         if draft:
             serializer = self.get_serializer(draft, data=request.data, partial=True)
@@ -237,7 +237,9 @@ class NoticePeriodView(generics.GenericAPIView):
             days_left = max(0, days_left)
             
             # calculate total days of notice as defined by dates, or fall back to system settings
-            total_days = (relieving_date - submission_date).days
+            ef = resignation.exit_feedback if isinstance(resignation.exit_feedback, dict) else {}
+            configured_notice = ef.get('notice_period')
+            total_days = configured_notice if configured_notice else (relieving_date - submission_date).days
             if total_days <= 0:
                 total_days = notice_period_days
             
@@ -315,11 +317,14 @@ class ExEmployeeListView(APIView):
     permission_classes = [IsHROrAdmin]
 
     def get(self, request, *args, **kwargs):
+        from django.utils import timezone
         employees = AppUser.objects.filter(role='employee')
         data = []
         for emp in employees:
             res = Resignation.objects.filter(email=emp.email).order_by('-created_at').first()
             if res and res.status == 'Approved':
+                if res.relieving_date and res.relieving_date > timezone.localdate():
+                    continue
                 hash_val = emp.id
                 years_of_service = (hash_val % 5) + 1
                 months_of_service = hash_val % 12

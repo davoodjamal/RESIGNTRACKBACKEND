@@ -26,8 +26,11 @@ class EmployeeDetailView(generics.RetrieveAPIView):
         res = Resignation.objects.filter(email=user.email).order_by('-created_at').first()
         if res:
             if res.status == 'Approved':
-                status_val = 'Resigned'
-            elif res.status in ['Pending', 'More Info Requested']:
+                if res.relieving_date and res.relieving_date > timezone.localdate():
+                    status_val = 'In-Notice'
+                else:
+                    status_val = 'Resigned'
+            elif res.status in ['Pending', 'More Info Requested', 'Pending HR Review', 'Exit Interview Pending', 'Exit Interview Submitted', 'Awaiting Exit Interview', 'Awaiting Approval']:
                 status_val = 'In-Notice'
             elif res.status in ['Rejected', 'Withdrawn', 'Draft']:
                 status_val = 'Active'
@@ -61,13 +64,17 @@ class EmployeeDetailView(generics.RetrieveAPIView):
 
         if res:
             ef = res.exit_feedback if (res.exit_feedback and isinstance(res.exit_feedback, dict)) else {}
+            original_proposed = ef.get('original_proposed_last_working_day')
+            if not original_proposed and res.relieving_date:
+                original_proposed = res.relieving_date.strftime('%Y-%m-%d')
+
             data['initialResignation'] = {
                 'reason': res.reason or '',
                 'elaboration': res.comments or '',
                 'immediateRelease': ef.get('immediate_release', False) or ef.get('emergencyReleaseRequested', False),
                 'emergencyReason': ef.get('emergencyReason', ''),
                 'emergencyRemarks': ef.get('emergencyRemarks', ''),
-                'proposedLastWorkingDay': res.relieving_date.strftime('%Y-%m-%d') if res.relieving_date else '',
+                'proposedLastWorkingDay': original_proposed or '',
                 'additionalFeedback': ef.get('additional_feedback', ''),
                 'hrRemarks': ef.get('hr_remarks', '')
             }
@@ -105,7 +112,9 @@ class EmployeeDetailView(generics.RetrieveAPIView):
             sub_date = res.submission_date or today
             rel_date = res.relieving_date or today
             
-            total_days = (rel_date - sub_date).days
+            ef = res.exit_feedback if (res.exit_feedback and isinstance(res.exit_feedback, dict)) else {}
+            configured_notice = ef.get('notice_period')
+            total_days = configured_notice if configured_notice else (rel_date - sub_date).days
             if total_days <= 0:
                 total_days = 30
             served_days = (today - sub_date).days
@@ -141,7 +150,7 @@ class EmployeeDetailView(generics.RetrieveAPIView):
                     {'question': '6. Did you receive adequate training and support?', 'answer': exit_int.adequate_training or 'N/A'},
                     {'question': '7. What did you enjoy most about working here?', 'answer': exit_int.most_enjoyed or 'N/A'},
                     {'question': '8. Suggested improvements for the role or company?', 'answer': exit_int.suggested_improvements or 'N/A'},
-                    {'question': '9. RECOMMEND TO OTHERS?', 'answer': exit_int.recommend_to_others or 'N/A'},
+                    {'question': '9. RECOMMEND TO OTHERS?', 'answer': 'N/A' if exit_int.recommend_to_others == 'neutral' else ('Yes' if exit_int.recommend_to_others == 'yes' else ('No' if exit_int.recommend_to_others == 'no' else (exit_int.recommend_to_others or 'N/A')))},
                     {'question': '10. CONSIDER REJOINING?', 'answer': exit_int.consider_rejoining or 'N/A'},
                 ]
                 data['exitInterview'] = {
@@ -169,7 +178,7 @@ class EmployeeDetailView(generics.RetrieveAPIView):
                     {'question': '6. Did you receive adequate training and support?', 'answer': 'Yes, absolutely' if ef.get('training') == 'yes' else ('No, it was lacking' if ef.get('training') == 'no' else ef.get('training', 'N/A'))},
                     {'question': '7. What did you enjoy most about working here?', 'answer': ef.get('enjoyText', 'N/A')},
                     {'question': '8. Suggested improvements for the role or company?', 'answer': ef.get('improveText', 'N/A')},
-                    {'question': '9. RECOMMEND TO OTHERS?', 'answer': 'Yes' if ef.get('recommend') == 'yes' else ('No' if ef.get('recommend') == 'no' else ef.get('recommend', 'N/A'))},
+                    {'question': '9. RECOMMEND TO OTHERS?', 'answer': 'Yes' if ef.get('recommend') == 'yes' else ('No' if ef.get('recommend') == 'no' else ('N/A' if ef.get('recommend') == 'neutral' else ef.get('recommend', 'N/A')))},
                     {'question': '10. CONSIDER REJOINING?', 'answer': 'Yes' if ef.get('rejoin') == 'yes' else ('No' if ef.get('rejoin') == 'no' else ef.get('rejoin', 'N/A'))},
                 ]
                 data['exitInterview'] = {

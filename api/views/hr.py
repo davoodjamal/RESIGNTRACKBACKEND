@@ -71,11 +71,12 @@ class ResignationProcessView(APIView):
         employee_id = request.data.get('employeeId')
         action = request.data.get('action')
         remarks = request.data.get('remarks', '')
+        notice_period = request.data.get('noticePeriod')
 
         if not employee_id:
             return Response({'error': 'employeeId is required.'}, status=status.HTTP_400_BAD_REQUEST)
-        if not action or action not in ['APPROVE', 'REJECT', 'REQUEST_INFO']:
-            return Response({'error': 'Valid action (APPROVE, REJECT, or REQUEST_INFO) is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not action or action not in ['APPROVE', 'REJECT', 'REQUEST_INFO', 'INITIATE_INTERVIEW', 'UPDATE_NOTICE_PERIOD', 'COMPLETE_MEETING', 'EMERGENCY_RELEASE']:
+            return Response({'error': 'Valid action (APPROVE, REJECT, REQUEST_INFO, INITIATE_INTERVIEW, UPDATE_NOTICE_PERIOD, COMPLETE_MEETING, or EMERGENCY_RELEASE) is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user = AppUser.objects.get(pk=employee_id)
@@ -89,13 +90,37 @@ class ResignationProcessView(APIView):
         if resignation.status in ['Approved', 'Rejected']:
             return Response({'error': 'Resignation process has already been finalized.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Handle notice period update/recalculation
+        if notice_period:
+            try:
+                days = int(notice_period)
+                if days in [15, 30, 45]:
+                    if not isinstance(resignation.exit_feedback, dict):
+                        resignation.exit_feedback = {}
+                    resignation.exit_feedback['notice_period'] = days
+                    
+                    # Store original proposed last working day if not already stored
+                    if 'original_proposed_last_working_day' not in resignation.exit_feedback:
+                        resignation.exit_feedback['original_proposed_last_working_day'] = resignation.relieving_date.strftime('%Y-%m-%d') if resignation.relieving_date else resignation.submission_date.strftime('%Y-%m-%d')
+                    
+                    # Recalculate relieving date
+                    resignation.relieving_date = resignation.submission_date + timezone.timedelta(days=days)
+            except Exception as e:
+                return Response({'error': f'Failed to update notice period: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+
         # Map action to resignation status
         status_map = {
             'APPROVE': 'Approved',
             'REJECT': 'Rejected',
             'REQUEST_INFO': 'More Info Requested',
+            'INITIATE_INTERVIEW': 'Exit Interview Pending',
+            'COMPLETE_MEETING': 'Awaiting Approval',
+            'EMERGENCY_RELEASE': 'Approved',
         }
-        resignation.status = status_map[action]
+        if action in status_map:
+            resignation.status = status_map[action]
+            if action == 'EMERGENCY_RELEASE':
+                resignation.relieving_date = timezone.localdate()
         
         # Log comments if provided
         if remarks:
@@ -105,13 +130,35 @@ class ResignationProcessView(APIView):
                 
         resignation.save()
 
+        # Handle notifications for Exit Interview Initiation
+        if action == 'INITIATE_INTERVIEW':
+            from ..models import Notification
+            Notification.objects.create(
+                user=user,
+                title="Exit Interview Unlocked",
+                message="HR has initiated your exit interview. Please complete the confidential survey in your portal.",
+                icon="fact_check"
+            )
+            # Simulate email dispatch
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Email sent to {user.email}: Exit Interview Unlocked")
+
         # Create AuditLog entry
-        AuditLog.objects.create(
-            user_id=request.user.id if request.user and request.user.is_authenticated else None,
-            action='Review Finalized' if action in ['APPROVE', 'REJECT'] else 'More Info Requested',
-            target=f"Employee: {user.username} ({user.email})",
-            message=f"Action: {action}. Remarks: {remarks}"
-        )
+        if action == 'UPDATE_NOTICE_PERIOD':
+            AuditLog.objects.create(
+                user_id=request.user.id if request.user and request.user.is_authenticated else None,
+                action='Policy Modified',
+                target=f"Employee: {user.username} ({user.email})",
+                message=f"Notice period updated to {notice_period} days. Recalculated relieving date to {resignation.relieving_date}."
+            )
+        else:
+            AuditLog.objects.create(
+                user_id=request.user.id if request.user and request.user.is_authenticated else None,
+                action='Review Finalized' if action in ['APPROVE', 'REJECT', 'EMERGENCY_RELEASE'] else ('Exit Interview Initiated' if action == 'INITIATE_INTERVIEW' else ('Meeting Completed' if action == 'COMPLETE_MEETING' else 'More Info Requested')),
+                target=f"Employee: {user.username} ({user.email})",
+                message=f"Action: {action}. Remarks: {remarks}"
+            )
 
         # Delegate details generation to EmployeeDetailView
         view = EmployeeDetailView()

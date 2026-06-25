@@ -282,12 +282,12 @@ class ExitInterviewSubmitView(APIView):
 
         # If status is SUBMITTED, update ExitChecklistTask and Resignation status
         if status_val == 'SUBMITTED':
-            res_obj.status = 'Pending'
+            res_obj.status = 'Exit Interview Submitted'
             res_obj.save()
             from ..models import ExitChecklistTask
             ExitChecklistTask.objects.filter(
                 resignation=res_obj,
-                title__iexact='Exit Interview'
+                title__icontains='Exit Interview'
             ).update(
                 status='Completed',
                 completed_at=timezone.now()

@@ -26,10 +26,12 @@ class AppUserSerializer(serializers.ModelSerializer):
             return 'Active'
             
         if res.status == 'Approved':
+            if res.relieving_date and res.relieving_date > timezone.localdate():
+                return 'In-Notice'
             return 'Resigned'
-        elif res.status in ['Pending', 'More Info Requested']:
+        elif res.status in ['Pending', 'More Info Requested', 'Pending HR Review', 'Exit Interview Pending', 'Exit Interview Submitted', 'Awaiting Exit Interview', 'Awaiting Approval']:
             return 'In-Notice'
-        elif res.status in ['Rejected', 'Withdrawn']:
+        elif res.status in ['Rejected', 'Withdrawn', 'Draft']:
             return 'Active'
             
         return 'Active'
