@@ -300,5 +300,69 @@ class ExitInterview(models.Model):
         return f"Exit Interview for {self.employee_name} ({self.status})"
 
 
+class CompanyMasterEmployee(models.Model):
+    employee_id = models.IntegerField(primary_key=True)
+    joining_date = models.DateField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'company_master"."employees'
+        verbose_name = "Company Master Employee"
+        verbose_name_plural = "Company Master Employees"
+
+    def __str__(self):
+        return f"EMP-{self.employee_id}: {self.joining_date}"
+
+
+class HRManagementStaffProfile(models.Model):
+    employee_id = models.IntegerField(primary_key=True)
+    date_of_joining = models.DateField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'hr_management"."staff_profiles'
+        verbose_name = "HR Staff Profile"
+        verbose_name_plural = "HR Staff Profiles"
+
+    def __str__(self):
+        return f"EMP-{self.employee_id}: {self.date_of_joining}"
+
+
+class UserDirectoryEmployeePersonal(models.Model):
+    employee_id = models.IntegerField(primary_key=True)
+    hire_date = models.DateField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'user_directory"."employee_personal'
+        verbose_name = "Employee Personal Profile"
+        verbose_name_plural = "Employee Personal Profiles"
+
+    def __str__(self):
+        return f"EMP-{self.employee_id}: {self.hire_date}"
+
+
+class JoiningDateAuditLog(models.Model):
+    timestamp = models.DateTimeField(auto_now_add=True)
+    employee_id = models.IntegerField()
+    action_type = models.CharField(max_length=100)
+    previous_value = models.DateField(null=True, blank=True)
+    new_value = models.DateField(null=True, blank=True)
+    actor = models.CharField(max_length=200, default='System')
+    sync_status = models.JSONField(default=dict)
+
+    def __str__(self):
+        return f"EMP-{self.employee_id} updated to {self.new_value} by {self.actor}"
+
+
+class SyncQueue(models.Model):
+    employee_id = models.IntegerField()
+    portal = models.CharField(max_length=50) # 'hr' or 'employee'
+    date_val = models.DateField()
+    retries = models.IntegerField(default=0)
+    status = models.CharField(max_length=20, default='Pending') # Pending, Failed, Success
+    last_attempt = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Sync {self.portal} for EMP-{self.employee_id} -> {self.date_val} ({self.status})"
+
+
 
 

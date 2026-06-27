@@ -35,14 +35,26 @@ class EmployeeDetailView(generics.RetrieveAPIView):
             elif res.status in ['Rejected', 'Withdrawn', 'Draft']:
                 status_val = 'Active'
                 
-        # Basic details
-        hash_val = user.id
-        years = [2019, 2020, 2021, 2022, 2023]
+        # Fetch from CompanyMasterEmployee
+        from ..models import CompanyMasterEmployee, HRManagementStaffProfile, UserDirectoryEmployeePersonal
+        emp_admin = CompanyMasterEmployee.objects.filter(employee_id=user.id).first()
+        if not emp_admin:
+            # Seed all three with the default date
+            hash_val = user.id
+            years = [2019, 2020, 2021, 2022, 2023]
+            year = years[hash_val % len(years)]
+            day = (hash_val * 7) % 28 + 1
+            month_idx = (hash_val % 12) + 1
+            seed_date_str = f"{year}-{month_idx:02d}-{day:02d}"
+            
+            emp_admin = CompanyMasterEmployee.objects.create(employee_id=user.id, joining_date=seed_date_str)
+            HRManagementStaffProfile.objects.get_or_create(employee_id=user.id, date_of_joining=seed_date_str)
+            UserDirectoryEmployeePersonal.objects.get_or_create(employee_id=user.id, hire_date=seed_date_str)
+        
+        # Display in the format the frontend employee details view expects (e.g. "Jan 08, 2021")
         months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        year = years[hash_val % len(years)]
-        month = months[hash_val % len(months)]
-        day = (hash_val * 7) % 28 + 1
-        join_date_str = f"{month} {day:02d}, {year}"
+        m_str = months[emp_admin.joining_date.month - 1]
+        join_date_str = f"{m_str} {emp_admin.joining_date.day:02d}, {emp_admin.joining_date.year}"
 
         data = {
             'id': user.id,

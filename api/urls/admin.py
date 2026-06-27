@@ -13,6 +13,8 @@ from ..views import (
     AnalyticsHourlyActivityView,
     SystemUsageSnapshotView,
     system_usage_stream,
+    AdminJoiningDateOverrideView,
+    JoiningDateAuditLogListView,
 )
 
 urlpatterns = [
@@ -29,4 +31,6 @@ urlpatterns = [
     path('analytics/activity/hourly/', AnalyticsHourlyActivityView.as_view(), name='analytics-hourly-activity'),
     path('v1/admin/analytics/system-usage/snapshot/', SystemUsageSnapshotView.as_view(), name='system-usage-snapshot'),
     path('v1/admin/analytics/system-usage/stream/', system_usage_stream, name='system-usage-stream'),
+    path('v1/admin/employee/<int:id>/joining-date/', AdminJoiningDateOverrideView.as_view(), name='admin-employee-joining-date'),
+    path('v1/admin/joining-date/audit-logs/', JoiningDateAuditLogListView.as_view(), name='admin-joining-date-audit-logs'),
 ]

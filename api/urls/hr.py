@@ -26,6 +26,7 @@ from ..views import (
     HREmployeeExitInterviewView,
     ResignationProcessView,
     ExEmployeeListView,
+    HRProfilePATCHView,
 )
 
 urlpatterns = [
@@ -63,6 +64,7 @@ urlpatterns = [
     path('notifications/read-all/', NotificationMarkReadAllView.as_view(), name='notification-read-all'),
     path('notifications/<int:pk>/read/', NotificationMarkReadView.as_view(), name='notification-read'),
     path('search/', GlobalSearchView.as_view(), name='global-search'),
+    path('v1/hr/profile/<int:id>', HRProfilePATCHView.as_view(), name='hr-profile-patch'),
 ]
 
 
