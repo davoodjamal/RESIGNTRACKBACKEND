@@ -209,10 +209,7 @@ class ExitInterviewSubmitView(APIView):
             return Response({"error": "No active resignation found."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Helper to compute employee_id_code
-        hash_val = request.user.id
-        years = [2019, 2020, 2021, 2022, 2023]
-        year = years[hash_val % len(years)]
-        employee_id_code = f"EF-{year}-{request.user.id:04d}"
+        employee_id_code = f"EMP-{request.user.id:04d}"
 
         # Calculate exit_rating if status is SUBMITTED
         exit_rating = None
