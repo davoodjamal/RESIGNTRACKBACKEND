@@ -48,6 +48,11 @@ def login_view(request):
         'email': user.email,
         'username': user.username,
         'role': user.role,
+        'fullName': user.full_name,
+        'phone': user.phone,
+        'dob': user.dob.isoformat() if user.dob else None,
+        'designation': user.designation,
+        'address': user.address,
         'access': str(refresh.access_token),
         'refresh': str(refresh),
     })
