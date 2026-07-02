@@ -45,6 +45,7 @@ def login_view(request):
 
     refresh = RefreshToken.for_user(user)
     return Response({
+        'id': user.id,
         'email': user.email,
         'username': user.username,
         'role': user.role,
