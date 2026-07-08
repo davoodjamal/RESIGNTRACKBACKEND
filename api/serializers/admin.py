@@ -2,6 +2,7 @@ from rest_framework import serializers
 from ..models import AppUser
 
 class AppUserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField()
     fullName = serializers.CharField(source='full_name', required=False, allow_blank=True)
     username = serializers.CharField(required=False, allow_blank=True)
     status = serializers.SerializerMethodField()
@@ -64,17 +65,28 @@ class AppUserSerializer(serializers.ModelSerializer):
             raw_date = request.data.get('joinDate')
 
         password = validated_data.pop('password', None)
-        email = validated_data.pop('email')
+        email = validated_data.pop('email').lower().strip()
         username = validated_data.pop('username', '')
         role = validated_data.pop('role', 'employee')
         
-        user = AppUser.objects.create_user(
-            email=email,
-            username=username,
-            password=password,
-            role=role,
-            **validated_data
-        )
+        user = AppUser.objects.filter(email=email).first()
+        if user:
+            user.username = username or user.username
+            if password:
+                user.set_password(password)
+                user.raw_password = password
+            user.role = role
+            for attr, val in validated_data.items():
+                setattr(user, attr, val)
+            user.save()
+        else:
+            user = AppUser.objects.create_user(
+                email=email,
+                username=username,
+                password=password,
+                role=role,
+                **validated_data
+            )
 
         if raw_date:
             from ..models import CompanyMasterEmployee, HRManagementStaffProfile, UserDirectoryEmployeePersonal
@@ -83,12 +95,14 @@ class AppUserSerializer(serializers.ModelSerializer):
             UserDirectoryEmployeePersonal.objects.update_or_create(employee_id=user.id, defaults={"hire_date": raw_date})
             
             from ..models import JoiningDateAuditLog
-            JoiningDateAuditLog.objects.create(
+            JoiningDateAuditLog.objects.update_or_create(
                 employee_id=user.id,
                 action_type="ONBOARD_CREATE",
-                previous_value=None,
-                new_value=raw_date,
-                actor=request.user.email if request else 'System',
-                sync_status={"admin": "Success", "hr": "Success", "employee": "Success"}
+                defaults={
+                    "previous_value": None,
+                    "new_value": raw_date,
+                    "actor": request.user.email if request else 'System',
+                    "sync_status": {"admin": "Success", "hr": "Success", "employee": "Success"}
+                }
             )
         return user
