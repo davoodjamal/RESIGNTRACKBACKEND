@@ -15,9 +15,15 @@ from ..views import (
     system_usage_stream,
     AdminJoiningDateOverrideView,
     JoiningDateAuditLogListView,
+    BroadcastAnnouncementView,
+    LatestAnnouncementView,
+    ActiveAnnouncementDeleteView,
 )
 
 urlpatterns = [
+    path('announcements/broadcast/', BroadcastAnnouncementView.as_view(), name='broadcast-announcement'),
+    path('announcements/latest/', LatestAnnouncementView.as_view(), name='latest-announcement'),
+    path('announcements/active/', ActiveAnnouncementDeleteView.as_view(), name='active-announcement-delete'),
     path('users/', UserListView.as_view(), name='user-list'),
     path('users/<int:pk>/', UserDetailView.as_view(), name='user-detail'),
     path('dashboard/metrics/', DashboardMetricsView.as_view(), name='dashboard-metrics'),

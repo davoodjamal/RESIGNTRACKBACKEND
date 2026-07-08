@@ -364,5 +364,18 @@ class SyncQueue(models.Model):
         return f"Sync {self.portal} for EMP-{self.employee_id} -> {self.date_val} ({self.status})"
 
 
+class Announcement(models.Model):
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    expiry = models.CharField(max_length=20, default='never')
+    expiry_time = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='created_announcements')
+
+    def __str__(self):
+        return self.title
+
+
+
 
 

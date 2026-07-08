@@ -332,7 +332,19 @@ class ExEmployeeListView(APIView):
                 
                 departure_date_str = res.relieving_date.strftime('%b %d, %Y') if res.relieving_date else res.created_at.strftime('%b %d, %Y')
                 
+                from ..models import ExitInterview
                 ef = res.exit_feedback if (res.exit_feedback and isinstance(res.exit_feedback, dict)) else {}
+                
+                # Fetch exit interview to get the primary reason
+                exit_int = ExitInterview.objects.filter(resignation=res).first()
+                exit_reason = 'Career Growth'
+                if exit_int and exit_int.reason_for_resignation:
+                    exit_reason = exit_int.reason_for_resignation
+                elif res.reason:
+                    exit_reason = res.reason
+                elif ef.get('reason'):
+                    exit_reason = ef.get('reason')
+                
                 rejoin_answer = ef.get('rejoin', 'yes')
                 rehire_eligible = rejoin_answer in ['yes', 'Yes']
 
@@ -344,7 +356,7 @@ class ExEmployeeListView(APIView):
                     'tenure': tenure_str,
                     'departureDate': departure_date_str,
                     'rehireEligible': rehire_eligible,
-                    'exitReason': ef.get('reason', res.reason or 'Career Growth')
+                    'exitReason': exit_reason
                 })
         
         total_records = len(data)
@@ -367,6 +379,10 @@ class ExEmployeeListView(APIView):
         reasons = [x['exitReason'] for x in data]
         primary_reason = Counter(reasons).most_common(1)[0][0] if reasons else 'Career Growth'
 
+        from ..models import SystemSettings
+        settings = SystemSettings.load()
+        db_reasons = settings.reasons
+
         return Response({
             'insights': {
                 'totalRecords': total_records,
@@ -374,7 +390,8 @@ class ExEmployeeListView(APIView):
                 'avgTenure': avg_tenure,
                 'primaryReason': primary_reason
             },
-            'employees': data
+            'employees': data,
+            'reasons': db_reasons
         })
 
 

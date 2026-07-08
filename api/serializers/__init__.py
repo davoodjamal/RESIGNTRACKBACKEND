@@ -6,7 +6,7 @@ from .asset import AssetSerializer, AssetAuditLogSerializer
 from .meeting import MeetingSerializer
 from .checklist import ExitChecklistTaskSerializer
 from .reschedule import RescheduleRequestSerializer
-from .notification import NotificationSerializer
+from .notification import NotificationSerializer, AnnouncementSerializer
 
 
 

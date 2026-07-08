@@ -59,6 +59,9 @@ from .notification import (
     NotificationMarkReadAllView,
     NotificationMarkReadView,
     create_notification,
+    BroadcastAnnouncementView,
+    LatestAnnouncementView,
+    ActiveAnnouncementDeleteView,
 )
 from .search import GlobalSearchView
 
@@ -120,6 +123,9 @@ __all__ = [
     'NotificationMarkReadAllView',
     'NotificationMarkReadView',
     'create_notification',
+    'BroadcastAnnouncementView',
+    'LatestAnnouncementView',
+    'ActiveAnnouncementDeleteView',
     'GlobalSearchView',
     'ExEmployeeListView',
     'HRProfilePATCHView',
