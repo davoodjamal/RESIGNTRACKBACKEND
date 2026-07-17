@@ -105,6 +105,25 @@ class SystemUsageSnapshotView(APIView):
 
 
 def system_usage_stream(request):
+    # Retrieve JWT access token from request query parameters
+    token_str = request.GET.get('token')
+    if not token_str:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Authentication credentials were not provided.")
+    
+    try:
+        from rest_framework_simplejwt.tokens import AccessToken
+        from ..models import AppUser
+        token = AccessToken(token_str)
+        user_id = token.payload.get('user_id')
+        user = AppUser.objects.get(id=user_id)
+        if user.role not in ['hr', 'admin']:
+            from django.http import HttpResponseForbidden
+            return HttpResponseForbidden("You do not have permission to access this stream.")
+    except Exception:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Invalid or expired authentication credentials.")
+
     q = system_usage_pubsub.add_listener()
     
     def event_stream():
@@ -128,5 +147,4 @@ def system_usage_stream(request):
     response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
     response['Cache-Control'] = 'no-cache'
     response['X-Accel-Buffering'] = 'no'
-    response['Access-Control-Allow-Origin'] = '*'
     return response

@@ -74,7 +74,6 @@ class AppUserSerializer(serializers.ModelSerializer):
             user.username = username or user.username
             if password:
                 user.set_password(password)
-                user.raw_password = password
             user.role = role
             for attr, val in validated_data.items():
                 setattr(user, attr, val)

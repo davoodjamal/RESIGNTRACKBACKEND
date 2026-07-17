@@ -51,7 +51,7 @@ class AuditLogListCreateView(generics.ListCreateAPIView):
     """GET /api/audit-logs/ — list.  POST — add new entry."""
     queryset = AuditLog.objects.all()
     serializer_class = AuditLogSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsHROrAdmin]
 
     def perform_create(self, serializer):
         if self.request.user and self.request.user.is_authenticated:

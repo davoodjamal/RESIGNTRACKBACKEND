@@ -19,7 +19,15 @@ class IsHROrAdmin(BasePermission):
         )
 
 
+from rest_framework.decorators import throttle_classes
+from rest_framework.throttling import AnonRateThrottle
+
+class LoginThrottle(AnonRateThrottle):
+    rate = '5/minute'
+    scope = 'login'
+
 @api_view(['POST'])
+@throttle_classes([LoginThrottle])
 def login_view(request):
     """Validate credentials against AppUser table and return JWT tokens."""
     serializer = LoginSerializer(data=request.data)
@@ -29,17 +37,19 @@ def login_view(request):
     password = serializer.validated_data['password']
     role = serializer.validated_data['role']
 
+    generic_error = 'Invalid email, password, or role.'
+
     try:
         user = AppUser.objects.get(email=email, role=role)
     except AppUser.DoesNotExist:
         return Response(
-            {'error': f'No {role} account found for this email.'},
+            {'error': generic_error},
             status=status.HTTP_401_UNAUTHORIZED
         )
 
     if not user.check_password(password):
         return Response(
-            {'error': 'Invalid password.'},
+            {'error': generic_error},
             status=status.HTTP_401_UNAUTHORIZED
         )
 
@@ -64,44 +74,17 @@ def login_view(request):
 def health_check(request):
     """
     Public health check endpoint.
-    Verifies database connection, lists APIs, and outputs environment/diagnostic details.
+    Verifies database connection status without exposing configuration details.
     """
     db_ok = True
-    db_error = None
     try:
         connection.ensure_connection()
-    except Exception as e:
+    except Exception:
         db_ok = False
-        db_error = str(e)
-
-    from django.conf import settings
-    db_config = settings.DATABASES.get('default', {})
-    db_host = db_config.get('HOST', '')
-    db_name = db_config.get('NAME', '')
-    
-    api_endpoints = [
-        {"path": "/api/health/", "method": "GET", "description": "Health check endpoint"},
-        {"path": "/api/login/", "method": "POST", "description": "Validate credentials & get JWT token"},
-        {"path": "/api/users/", "method": "GET/POST", "description": "List or create users"},
-        {"path": "/api/users/<pk>/", "method": "GET/PUT/PATCH/DELETE", "description": "Manage user details"},
-        {"path": "/api/resignations/", "method": "GET/POST", "description": "List or submit resignations"},
-        {"path": "/api/resignations/<pk>/", "method": "PATCH", "description": "Update resignation status"},
-        {"path": "/api/resignations/<pk>/withdraw/", "method": "PATCH", "description": "Withdraw resignation"},
-        {"path": "/api/settings/", "method": "GET/PUT", "description": "Read or update system settings"},
-        {"path": "/api/audit-logs/", "method": "GET/POST", "description": "List or create audit logs"},
-    ]
 
     return Response({
         "status": "healthy" if db_ok else "unhealthy",
         "database": {
-            "connected": db_ok,
-            "host": db_host,
-            "name": db_name,
-            "error": db_error
-        },
-        "endpoints": api_endpoints,
-        "environment": {
-            "debug": settings.DEBUG,
-            "timezone": settings.TIME_ZONE,
+            "connected": db_ok
         }
     }, status=status.HTTP_200_OK if db_ok else status.HTTP_500_INTERNAL_SERVER_ERROR)

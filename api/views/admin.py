@@ -65,7 +65,6 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
         user = serializer.save()
         if 'password' in serializer.validated_data:
             user.set_password(serializer.validated_data['password'])
-            user.raw_password = serializer.validated_data['password']
             user.save()
 
 

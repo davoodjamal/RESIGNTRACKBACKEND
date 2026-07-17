@@ -14,8 +14,6 @@ class AppUserManager(BaseUserManager):
             **extra_fields
         )
         user.set_password(password)
-        if password:
-            user.raw_password = password
         user.save(using=self._db)
         return user
 
@@ -49,7 +47,6 @@ class AppUser(AbstractBaseUser):
     designation = models.CharField(max_length=200, blank=True, default='')
     address = models.TextField(blank=True, default='')
     permissions = models.JSONField(default=list, blank=True)
-    raw_password = models.CharField(max_length=200, blank=True, default='')
 
     objects = AppUserManager()
 
